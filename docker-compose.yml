@@ -1,0 +1,98 @@
+version: "2.1"
+services:
+  jellyfin:
+    image: lscr.io/linuxserver/jellyfin:latest
+    container_name: jellyfin
+    environment:
+      - TZ=Etc/UTC
+      - JELLYFIN_PublishedServerUrl=192.168.0.5 #optional
+    volumes:
+      - ${ROOT_PATH}/jellyfin/config:/config
+      - ${ROOT_PATH}/tv:/data/tvshows
+      - ${ROOT_PATH}/movies:/data/movies
+    ports:
+      - 8096:8096
+      - 8920:8920 #optional
+      - 7359:7359/udp #optional
+      - 1900:1900/udp #optional
+    restart: unless-stopped
+  sonarr:
+    image: lscr.io/linuxserver/sonarr:latest
+    container_name: sonarr
+    depends_on:
+      - nordvpn
+    environment:
+      - TZ=Etc/UTC
+    volumes:
+      - ${ROOT_PATH}/config:/config
+      - ${ROOT_PATH}/tv:/tv #optional
+      - ${ROOT_PATH}/downloads:/downloads #optional
+      - ${ROOT_PATH}/nzbget:/nzbget
+    network_mode: "service:nordvpn"
+    restart: unless-stopped
+  # This is supposedly deprecated, but is supported by sonarr.
+  nzbget:
+    restart: "unless-stopped"
+    build:
+      dockerfile: nzbget/Dockerfile
+      context: .
+    depends_on:
+      - nordvpn
+    network_mode: "service:nordvpn"
+    volumes:
+      - ${ROOT_PATH}/nzbget:/nzbget
+      - ./nzbget:/config
+  # sabnzbd:
+  #   image: lscr.io/linuxserver/sabnzbd:latest
+  #   container_name: sabnzbd
+  #   depends_on:
+  #     - nordvpn
+  #   environment:
+  #     - PUID=1000
+  #     - PGID=1000
+  #     - TZ=Etc/UTC
+  #   volumes:
+  #     - /data/media/sabnzbd/config:/config
+  #     - /data/media/sabnzbd/downloads:/downloads #optional
+  #     - /data/media/sabnzbd/incomplete/downloads:/incomplete-downloads #optional
+  #   network_mode: "service:nordvpn"
+  #   restart: unless-stopped
+  aria2:
+    restart: "unless-stopped"
+    build:
+      dockerfile: aria2/Dockerfile
+      context: .
+    depends_on:
+      - nordvpn
+    network_mode: "service:nordvpn"
+  jackett:
+    image: lscr.io/linuxserver/jackett:latest
+    container_name: jackett
+    environment:
+      - TZ=Etc/UTC
+      - AUTO_UPDATE=true #optional
+      - RUN_OPTS= #optional
+    volumes:
+      - ${ROOT_PATH}/jackett:/config
+      - ${ROOT_PATH}/downloads:/downloads
+    network_mode: "service:nordvpn"
+    restart: unless-stopped
+  nordvpn:
+    image: ghcr.io/bubuntux/nordlynx
+    hostname: vpn
+    container_name: nordlynx
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE   
+    env_file:
+      - nordvpn.env
+    sysctls:
+      - net.ipv4.conf.all.src_valid_mark=1   # maybe
+      - net.ipv4.conf.all.rp_filter=2        # maybe; set reverse path filter to loose mode
+      - net.ipv6.conf.all.disable_ipv6=1     # disable ipv6; recommended if using ipv4 only
+    ports:
+      - "0.0.0.0:6789:6789/tcp"
+      - "0.0.0.0:6800:6800/tcp"
+      - "0.0.0.0:8989:8989/tcp"
+      - "0.0.0.0:9117:9117/tcp" # jacket
+      #- "0.0.0.0:8080:8080/tcp" # sabnzbd
