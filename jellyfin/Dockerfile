@@ -8,6 +8,7 @@ ARG DEBIAN_FRONTEND="noninteractive"
 ARG APT_KEY_DONT_WARN_ON_DANGEROUS_USAGE=DontWarn
 # https://github.com/NVIDIA/nvidia-docker/wiki/Installation-(Native-GPU-Support)
 ENV NVIDIA_DRIVER_CAPABILITIES="compute,video,utility"
+ENV NVIDIA_VISIBLE_DEVICES=all
 
 COPY --from=qemu /usr/bin/qemu-aarch64-static /usr/bin
 

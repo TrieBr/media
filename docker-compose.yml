@@ -12,6 +12,7 @@ services:
       - ${ROOT_PATH}/jellyfin/config:/config
       - ${ROOT_PATH}/tv:/media
       - ${ROOT_PATH}/jellyfin/cache:/cache
+      - /usr/lib/aarch64-linux-gnu/tegra:/usr/lib/aarch64-linux-gnu/tegra
     ports:
       - 8096:8096
       - 8920:8920 #optional
